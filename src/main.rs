@@ -1,7 +1,6 @@
 use rand::distributions::Uniform;
 use rand::prelude::*;
 use std::collections::HashMap;
-use std::hint::black_box;
 use std::time::{Duration, Instant};
 use RangeDef::{EndVal, MidRange};
 
@@ -104,11 +103,12 @@ impl RangeInclusive {
 }
 
 fn compute_time(nums: Vec<u32>) -> ComputeTime {
-    // black_box hints to the compiler to prevent optimizer
-    // re-ordering and messing up the timings
-    let time_inst = black_box(Instant::now());
-    black_box(nums.iter().min());
-    let duration = black_box(time_inst.elapsed());
+    // Need to prevent the compiler from re-ordering statements.
+    // Arranged so result depends on time_inst
+    // and duration depends on result.
+    let time_inst = Instant::now();
+    let result = (time_inst, nums.iter().min());
+    let duration = result.0.elapsed();
     ComputeTime {
         size: nums.len().try_into().unwrap(),
         duration,
