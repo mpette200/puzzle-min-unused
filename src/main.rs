@@ -10,23 +10,24 @@ const RANDOM_SEED: u64 = 96251;
 mod test;
 
 fn main() {
-    let t1 = vec![4, 7, 6, 5, 2];
-    get_min_not_in_list_via_hash(&t1);
-    get_min_not_in_list_via_sort(&t1);
-
-    let t2 = vec![4, 7, 6, 5, 2, 1, 0];
-    get_min_not_in_list_via_hash(&t2);
-    get_min_not_in_list_via_sort(&t2);
-
     let mut ran_gen = RandomGen::new(RANDOM_SEED);
 
-    let results: Vec<ComputeTime> = (1_000_000..9_000_000)
-        .step_by(1_000_000)
-        .map(|size| compute_time(ran_gen.make_vec(size)))
+    let results_1: Vec<ComputeTime> = (200_000..1_700_000)
+        .step_by(200_000)
+        .map(|size| compute_time(ran_gen.make_vec(size), get_min_not_in_list_via_sort))
         .collect();
+    println!("{:?}", results_1);
+    
+    println!();
+    let results_2: Vec<ComputeTime> = (200_000..1_700_000)
+    .step_by(200_000)
+    .map(|size| compute_time(ran_gen.make_vec(size), get_min_not_in_list_via_hash))
+    .collect();
+    println!("{:?}", results_2);
 
-    println!("{:?}", results);
-    println!("{} -> {}", results[0].size, results[0].duration.as_millis());
+    // avoid unused warnings
+    results_1[0].size;
+    results_1[0].duration;
 }
 
 fn get_min_not_in_list_via_sort(vals: &Vec<u32>) -> u32 {
@@ -48,7 +49,7 @@ fn get_min_not_in_list_via_sort(vals: &Vec<u32>) -> u32 {
                 .skip_while(|i| i + 1 < sorted.len() && sorted[i + 1] - sorted[*i] <= 1)
                 .next()
                 .map(|i| sorted[i] + 1)
-                .unwrap_or(0)
+                .unwrap()
         }
     }
 }
@@ -126,12 +127,12 @@ impl RangeInclusive {
     }
 }
 
-fn compute_time(nums: Vec<u32>) -> ComputeTime {
+fn compute_time(nums: Vec<u32>, func_to_call: fn(&Vec<u32>) -> u32) -> ComputeTime {
     // Need to prevent the compiler from re-ordering statements.
     // Arranged so result depends on time_inst
     // and duration depends on result.
     let time_inst = Instant::now();
-    let result = (time_inst, nums.iter().min());
+    let result = (time_inst, func_to_call(&nums));
     let duration = result.0.elapsed();
     ComputeTime {
         size: nums.len().try_into().unwrap(),
