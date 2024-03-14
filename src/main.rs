@@ -51,7 +51,7 @@ fn get_min_not_in_list_via_sort(vals: &Vec<u32>) -> u32 {
 
 fn get_min_not_in_list_via_hash(vals: &Vec<u32>) -> u32 {
     let mut curr_min: u32 = u32::MAX;
-    let mut consecutives: HashMap<u32, RangeDef> = HashMap::new();
+    let mut consecutives: HashMap<u32, RangeDef> = HashMap::with_capacity(vals.len());
     for val in vals {
         if curr_min > *val {
             curr_min = *val;
