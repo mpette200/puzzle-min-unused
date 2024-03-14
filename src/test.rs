@@ -1,5 +1,7 @@
 use crate::get_min_not_in_list_via_hash;
 use crate::get_min_not_in_list_via_sort;
+use crate::RandomGen;
+use crate::RANDOM_SEED;
 
 // ----- Test Hash Algorithm -----
 
@@ -99,4 +101,21 @@ fn test_via_sort_7() {
 fn test_via_sort_8() {
     let v = vec![10, 6, 8, 3, 0];
     assert_eq!(get_min_not_in_list_via_sort(&v), 1);
+}
+
+#[test]
+fn test_by_comparing() {
+    let mut ran_gen = RandomGen::new(RANDOM_SEED);
+
+    let random_lists: Vec<Vec<u32>> = (5_000..25_000)
+        .step_by(5_000)
+        .map(|size| ran_gen.make_vec(size))
+        .collect();
+
+    for nums in random_lists {
+        assert_eq!(
+            get_min_not_in_list_via_sort(&nums),
+            get_min_not_in_list_via_hash(&nums)
+        )
+    }
 }

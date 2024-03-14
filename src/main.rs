@@ -12,17 +12,22 @@ mod test;
 fn main() {
     let mut ran_gen = RandomGen::new(RANDOM_SEED);
 
-    let results_1: Vec<ComputeTime> = (200_000..1_700_000)
+    let random_lists: Vec<Vec<u32>> = (200_000..1_700_000)
         .step_by(200_000)
-        .map(|size| compute_time(ran_gen.make_vec(size), get_min_not_in_list_via_sort))
+        .map(|size| ran_gen.make_vec(size))
+        .collect();
+
+    let results_1: Vec<ComputeTime> = random_lists
+        .iter()
+        .map(|val_set| compute_time(val_set, get_min_not_in_list_via_sort))
         .collect();
     println!("{:?}", results_1);
-    
+
     println!();
-    let results_2: Vec<ComputeTime> = (200_000..1_700_000)
-    .step_by(200_000)
-    .map(|size| compute_time(ran_gen.make_vec(size), get_min_not_in_list_via_hash))
-    .collect();
+    let results_2: Vec<ComputeTime> = random_lists
+        .iter()
+        .map(|val_set| compute_time(val_set, get_min_not_in_list_via_hash))
+        .collect();
     println!("{:?}", results_2);
 
     // avoid unused warnings
@@ -31,26 +36,16 @@ fn main() {
 }
 
 fn get_min_not_in_list_via_sort(vals: &Vec<u32>) -> u32 {
-    if vals.is_empty() {
+    let mut sorted = vals.clone();
+    sorted.sort_unstable();
+    if sorted.is_empty() || sorted[0] > 0 {
         0
-    } else if vals.len() == 1 {
-        if vals[0] == 0 {
-            1
-        } else {
-            0
-        }
     } else {
-        let mut sorted = vals.clone();
-        sorted.sort_unstable();
-        if sorted[0] > 0 {
-            0
-        } else {
-            (0..sorted.len())
-                .skip_while(|i| i + 1 < sorted.len() && sorted[i + 1] - sorted[*i] <= 1)
-                .next()
-                .map(|i| sorted[i] + 1)
-                .unwrap()
-        }
+        (0..sorted.len())
+            .skip_while(|i| i + 1 < sorted.len() && sorted[i + 1] - sorted[*i] <= 1)
+            .next()
+            .map(|i| sorted[i] + 1)
+            .unwrap()
     }
 }
 
@@ -127,12 +122,12 @@ impl RangeInclusive {
     }
 }
 
-fn compute_time(nums: Vec<u32>, func_to_call: fn(&Vec<u32>) -> u32) -> ComputeTime {
+fn compute_time(nums: &Vec<u32>, func_to_call: fn(&Vec<u32>) -> u32) -> ComputeTime {
     // Need to prevent the compiler from re-ordering statements.
     // Arranged so result depends on time_inst
     // and duration depends on result.
     let time_inst = Instant::now();
-    let result = (time_inst, func_to_call(&nums));
+    let result = (time_inst, func_to_call(nums));
     let duration = result.0.elapsed();
     ComputeTime {
         size: nums.len().try_into().unwrap(),
