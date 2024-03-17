@@ -122,7 +122,10 @@ impl RangeInclusive {
     }
 }
 
-fn compute_time(nums: &Vec<u32>, func_to_call: fn(&Vec<u32>) -> u32) -> ComputeTime {
+fn compute_time<F>(nums: &Vec<u32>, func_to_call: F) -> ComputeTime
+where
+    F: Fn(&Vec<u32>) -> u32
+{
     // Need to prevent the compiler from re-ordering statements.
     // Arranged so result depends on time_inst
     // and duration depends on result.
