@@ -3,10 +3,11 @@ use rand::distributions::Uniform;
 use rand::prelude::*;
 use std::collections::HashMap;
 use std::error::Error;
+use std::ops::Range;
 use std::time::{Duration, Instant};
 use RangeDef::{EdgeVal, MidRange};
 
-const CHART_FILE_NAME: &str = "chart_01_hello_world.png";
+const PATH_IMAGES: &str = "images/";
 const RANDOM_SEED: u64 = 96251;
 
 #[cfg(test)]
@@ -33,7 +34,19 @@ fn main() {
         .collect();
     println!("{:?}", results_2);
 
-    let _ = make_plot();
+    plot_compute_time(
+        &concat_str(PATH_IMAGES, "chart_01_via_sort.png"),
+        &results_1,
+        "Algorithm Based on Sort",
+    )
+    .unwrap();
+
+    plot_compute_time(
+        &concat_str(PATH_IMAGES, "chart_02_via_hash.png"),
+        &results_2,
+        "Algorithm Based on Hash Table",
+    )
+    .unwrap();
 
     // avoid unused warnings
     results_1[0].size;
@@ -143,7 +156,7 @@ where
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 struct ComputeTime {
     size: u32,
     duration: Duration,
@@ -168,8 +181,67 @@ impl RandomGen {
     }
 }
 
-fn make_plot() -> Result<(), Box<dyn Error>> {
-    let root_area = BitMapBackend::new(CHART_FILE_NAME, (1024, 768)).into_drawing_area();
+fn concat_str(a: &str, b: &str) -> String {
+    let mut out = String::from(a);
+    out.push_str(b);
+    out
+}
+
+fn plot_compute_time(
+    filename: &str,
+    data: &Vec<ComputeTime>,
+    title: &str,
+) -> Result<(), Box<dyn Error>> {
+    let root_area = BitMapBackend::new(filename, (640, 480)).into_drawing_area();
+    root_area.fill(&WHITE)?;
+    let root_area = root_area.titled(title, ("sans-serif", 24))?;
+
+    let x_range = range_by_key(&data, |x| x.size).expect("Got empty data");
+    let y_range = range_by_key(&data, |x| x.duration.as_millis()).expect("Got empty data");
+
+    let mut cc = ChartBuilder::on(&root_area)
+        .margin(5)
+        .set_all_label_area_size(50)
+        .build_cartesian_2d(x_range, y_range)?;
+
+    cc.configure_mesh()
+        .x_labels(10)
+        .y_labels(10)
+        .max_light_lines(5)
+        .x_desc("Length of List")
+        .y_desc("Milliseconds")
+        .x_label_formatter(&|v| format!("{:.1}", v))
+        .y_label_formatter(&|v| format!("{:.1}", v))
+        .draw()?;
+
+    cc.draw_series(PointSeries::of_element(
+        data.iter().map(|d| (d.size, d.duration.as_millis())),
+        5i32,
+        RED.filled(),
+        &Circle::new,
+    ))?;
+
+    root_area
+        .present()
+        .expect(&format!("Unable to write result: {}.", filename));
+    println!("Result has been saved to {}", filename);
+
+    Ok(())
+}
+
+fn range_by_key<B, T, F>(data: &[T], mut f: F) -> Option<Range<B>>
+where
+    B: Ord + Copy,
+    F: FnMut(&T) -> B,
+{
+    let vals: Vec<B> = data.iter().map(&mut f).collect();
+    vals.iter()
+        .min()
+        .and_then(|min_val| vals.iter().max().map(|max_val| *min_val..*max_val))
+}
+
+fn _example_plot() -> Result<(), Box<dyn Error>> {
+    let root_area = BitMapBackend::new("CHART_FILE_NAME", (1024, 768)).into_drawing_area();
 
     root_area.fill(&WHITE)?;
 
@@ -252,6 +324,6 @@ fn make_plot() -> Result<(), Box<dyn Error>> {
 
     // To avoid the IO failure being ignored silently, we manually call the present function
     root_area.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
-    println!("Result has been saved to {}", CHART_FILE_NAME);
+    println!("Result has been saved to {}", "CHART_FILE_NAME");
     Ok(())
 }
