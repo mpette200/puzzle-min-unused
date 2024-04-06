@@ -52,7 +52,7 @@ fn main() {
 
 fn get_min_not_in_list_via_sort(vals: &Vec<u32>) -> u32 {
     let mut sorted = vals.clone();
-    sorted.sort_unstable();
+    sorted.sort();
     if sorted.is_empty() || sorted[0] > 0 {
         0
     } else {
